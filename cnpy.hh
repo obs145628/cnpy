@@ -2,8 +2,7 @@
 //Released under MIT License
 //license available in LICENSE file, or at http://www.opensource.org/licenses/mit-license.php
 
-#ifndef LIBCNPY_H_
-#define LIBCNPY_H_
+#pragma once
 
 #include<string>
 #include<stdexcept>
@@ -266,4 +265,4 @@ namespace cnpy {
 
 }
 
-#endif
+#include "cnpy.hxx"

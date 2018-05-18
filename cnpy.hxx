@@ -2,7 +2,10 @@
 //Released under MIT License
 //license available in LICENSE file, or at http://www.opensource.org/licenses/mit-license.php
 
-#include"cnpy.h"
+#pragma once
+
+#include"cnpy.hh"
+
 #include<complex>
 #include<cstdlib>
 #include<algorithm>
@@ -10,12 +13,12 @@
 #include<iomanip>
 #include<stdint.h>
 
-char cnpy::BigEndianTest() {
+inline char cnpy::BigEndianTest() {
     int x = 1;
     return (((char *)&x)[0]) ? '<' : '>';
 }
 
-char cnpy::map_type(const std::type_info& t)
+inline char cnpy::map_type(const std::type_info& t)
 {
     if(t == typeid(float) ) return 'f';
     if(t == typeid(double) ) return 'f';
@@ -42,12 +45,14 @@ char cnpy::map_type(const std::type_info& t)
     else return '?';
 }
 
-template<> std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const std::string rhs) {
+template<>
+inline std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const std::string rhs) {
     lhs.insert(lhs.end(),rhs.begin(),rhs.end());
     return lhs;
 }
 
-template<> std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const char* rhs) {
+template<>
+inline std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const char* rhs) {
     //write in little endian
     size_t len = strlen(rhs);
     lhs.reserve(len);
@@ -57,11 +62,13 @@ template<> std::vector<char>& cnpy::operator+=(std::vector<char>& lhs, const cha
     return lhs;
 }
 
-void cnpy::parse_npy_header(unsigned char* buffer,size_t& word_size, std::vector<size_t>& shape, bool& fortran_order) {
+inline void cnpy::parse_npy_header(unsigned char* buffer,size_t& word_size, std::vector<size_t>& shape, bool& fortran_order) {
     //std::string magic_string(buffer,6);
     uint8_t major_version = *reinterpret_cast<uint8_t*>(buffer+6);
     uint8_t minor_version = *reinterpret_cast<uint8_t*>(buffer+7);
     uint16_t header_len = *reinterpret_cast<uint16_t*>(buffer+8);
+    (void) major_version;
+    (void) minor_version;
     std::string header(reinterpret_cast<char*>(buffer+9),header_len);
 
     int loc1, loc2;
@@ -89,6 +96,7 @@ void cnpy::parse_npy_header(unsigned char* buffer,size_t& word_size, std::vector
     //not sure when this applies except for byte array
     loc1 = header.find("descr")+9;
     bool littleEndian = (header[loc1] == '<' || header[loc1] == '|' ? true : false);
+    (void) littleEndian;
     assert(littleEndian);
 
     //char type = header[loc1+1];
@@ -99,7 +107,7 @@ void cnpy::parse_npy_header(unsigned char* buffer,size_t& word_size, std::vector
     word_size = atoi(str_ws.substr(0,loc2).c_str());
 }
 
-void cnpy::parse_npy_header(FILE* fp, size_t& word_size, std::vector<size_t>& shape, bool& fortran_order) {  
+inline void cnpy::parse_npy_header(FILE* fp, size_t& word_size, std::vector<size_t>& shape, bool& fortran_order) {  
     char buffer[256];
     size_t res = fread(buffer,sizeof(char),11,fp);       
     if(res != 11)
@@ -141,6 +149,7 @@ void cnpy::parse_npy_header(FILE* fp, size_t& word_size, std::vector<size_t>& sh
         throw std::runtime_error("parse_npy_header: failed to find header keyword: 'descr'");
     loc1 += 9;
     bool littleEndian = (header[loc1] == '<' || header[loc1] == '|' ? true : false);
+    (void) littleEndian;
     assert(littleEndian);
 
     //char type = header[loc1+1];
@@ -151,7 +160,7 @@ void cnpy::parse_npy_header(FILE* fp, size_t& word_size, std::vector<size_t>& sh
     word_size = atoi(str_ws.substr(0,loc2).c_str());
 }
 
-void cnpy::parse_zip_footer(FILE* fp, uint16_t& nrecs, size_t& global_header_size, size_t& global_header_offset)
+inline void cnpy::parse_zip_footer(FILE* fp, uint16_t& nrecs, size_t& global_header_size, size_t& global_header_offset)
 {
     std::vector<char> footer(22);
     fseek(fp,-22,SEEK_END);
@@ -172,9 +181,14 @@ void cnpy::parse_zip_footer(FILE* fp, uint16_t& nrecs, size_t& global_header_siz
     assert(disk_start == 0);
     assert(nrecs_on_disk == nrecs);
     assert(comment_len == 0);
+
+    (void) disk_no;
+    (void) disk_start;
+    (void) nrecs_on_disk;
+    (void) comment_len;
 }
 
-cnpy::NpyArray load_the_npy_file(FILE* fp) {
+inline cnpy::NpyArray load_the_npy_file(FILE* fp) {
     std::vector<size_t> shape;
     size_t word_size;
     bool fortran_order;
@@ -187,7 +201,7 @@ cnpy::NpyArray load_the_npy_file(FILE* fp) {
     return arr;
 }
 
-cnpy::NpyArray load_the_npz_array(FILE* fp, uint32_t compr_bytes, uint32_t uncompr_bytes) {
+inline cnpy::NpyArray load_the_npz_array(FILE* fp, uint32_t compr_bytes, uint32_t uncompr_bytes) {
 
     std::vector<unsigned char> buffer_compr(compr_bytes);
     std::vector<unsigned char> buffer_uncompr(uncompr_bytes);
@@ -212,6 +226,7 @@ cnpy::NpyArray load_the_npz_array(FILE* fp, uint32_t compr_bytes, uint32_t uncom
 
     err = inflate(&d_stream, Z_FINISH);
     err = inflateEnd(&d_stream);
+    (void) err;
 
     std::vector<size_t> shape;
     size_t word_size;
@@ -226,7 +241,7 @@ cnpy::NpyArray load_the_npz_array(FILE* fp, uint32_t compr_bytes, uint32_t uncom
     return array;
 }
 
-cnpy::npz_t cnpy::npz_load(std::string fname) {
+inline cnpy::npz_t cnpy::npz_load(std::string fname) {
     FILE* fp = fopen(fname.c_str(),"rb");
 
     if(!fp) {
@@ -275,7 +290,7 @@ cnpy::npz_t cnpy::npz_load(std::string fname) {
     return arrays;  
 }
 
-cnpy::NpyArray cnpy::npz_load(std::string fname, std::string varname) {
+inline cnpy::NpyArray cnpy::npz_load(std::string fname, std::string varname) {
     FILE* fp = fopen(fname.c_str(),"rb");
 
     if(!fp) {
@@ -325,7 +340,7 @@ cnpy::NpyArray cnpy::npz_load(std::string fname, std::string varname) {
     abort();
 }
 
-cnpy::NpyArray cnpy::npy_load(std::string fname) {
+inline cnpy::NpyArray cnpy::npy_load(std::string fname) {
 
     FILE* fp = fopen(fname.c_str(), "rb");
 
